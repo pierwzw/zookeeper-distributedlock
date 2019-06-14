@@ -115,8 +115,7 @@ public class BaseDistributedLock {
                          * 监听指定节点的数据发生变化触发该方法
                          *
                          */
-                        public void handleDataChange(String dataPath,
-                                                     Object data) throws Exception {
+                        public void handleDataChange(String dataPath, Object data) throws Exception {
 
                         }
 
