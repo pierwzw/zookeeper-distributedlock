@@ -5,7 +5,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.log4j.Logger;
 
@@ -18,8 +20,9 @@ public class DistributedLock {
     private static final String basePath = "/curator";
 
     private String lockName;
-    // 可重入
-    private InterProcessMutex lock;
+
+    private InterProcessLock lock;
+
     private static final String host = "aliyun:2181";
 
     private static CuratorFramework client;
@@ -33,7 +36,8 @@ public class DistributedLock {
     public DistributedLock(String lockName) {
         this.lockName = lockName;
         try {
-            lock = new InterProcessMutex(client, basePath + "/" + lockName);
+            //lock = new InterProcessMutex(client, basePath + "/" + lockName);
+            lock = new InterProcessSemaphoreMutex(client, basePath + "/" + lockName);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -86,10 +90,18 @@ public class DistributedLock {
     }
 
     public static void main(String[] args) {
-        DistributedLock lock = new DistributedLock("pier");
+        final DistributedLock lock = new DistributedLock("pier");
         for (int i = 0; i < 10; i++) {
             try {
-                lock.tryLock();
+
+                new Thread(new Runnable() {
+                    public void run() {
+                        lock.tryLock();
+                        // 使用不可重入锁会一直阻塞在此处
+                        //lock.tryLock();
+                    }
+                }
+                ).start();
                 System.out.println("正在进行运算操作：" + System.currentTimeMillis());
             } catch (Exception e) {
                 e.printStackTrace();
